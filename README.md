@@ -11,7 +11,7 @@
 - [x] Added a method for identifying CPU architecture for  binary installation
 - [x] Design UI for starting and stopping server
 - [x] Tested the server in the browser with Sqlite
+- [x] Add WebView activity
 - [ ] Compile x86 and arm PHP binaries
-- [ ] Add WebView activity
 - [ ] Start server by using SwitchButton instead of DialogBox
 - [ ] Test Attendo web application
