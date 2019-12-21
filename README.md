@@ -13,5 +13,5 @@
 - [x] Tested the server in the browser with Sqlite
 - [ ] Compile x86 and arm PHP binaries
 - [ ] Add WebView activity
-- [ ] Start server by using Switch Button instead of DialogBox
-
+- [ ] Start server by using SwitchButton instead of DialogBox
+- [ ] Test Attendo web application
