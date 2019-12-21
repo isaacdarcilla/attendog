@@ -12,6 +12,8 @@
 - [x] Design UI for starting and stopping server
 - [x] Tested the server in the browser with Sqlite
 - [x] Add WebView activity
+- [x] Start server by using SwitchButton instead of DialogBox
+- [x] Execute PHP server on background process (Resolves crash)
+- [x] Copy Attendo assets to /mnt/sdcard/.attendo/<folder>
 - [ ] Compile x86 and arm PHP binaries
-- [ ] Start server by using SwitchButton instead of DialogBox
 - [ ] Test Attendo web application
