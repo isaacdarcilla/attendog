@@ -1,6 +1,6 @@
 # Attendo! for Android
 
-### Todo
+### Tasks
 
 - [x] Add new MainActivity 
 - [x] Compile arm65-v8a and x86_64 PHP binaries
