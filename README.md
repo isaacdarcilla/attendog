@@ -14,6 +14,6 @@
 - [x] Add WebView activity
 - [x] Start server by using SwitchButton instead of DialogBox
 - [x] Execute PHP server on background process (Resolves crash)
-- [x] Copy Attendo assets to /mnt/sdcard/.attendo/<folder>
+- [ ] Copy Attendo assets to /mnt/sdcard/.attendo/<folder>
 - [ ] Compile x86 and arm PHP binaries
 - [ ] Test Attendo web application
