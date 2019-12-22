@@ -12,7 +12,7 @@
 - [x] Start server by using SwitchButton instead of DialogBox
 - [x] Execute PHP server on background process (Resolves crash)
 - [x] Add Camera permission (Scanner still not working)
-- [x] Compile x86 PHP binaries
+- [x] Compile x86 PHP binaries now support x86 CPU
 - [ ] Copy Attendo assets to /mnt/sdcard/.attendo/www
 - [ ] Compile ARM PHP binaries
 - [ ] Test Attendo web application
