@@ -1,0 +1,14 @@
+V/InputMethodManager: Reporting focus gain, without startInput
+I/chromium: [INFO:CONSOLE(18)] "Invalid asm.js: Type mismatch in assignment", source: http://localhost:3000/instascan.min.js (18)
+I/CameraManagerGlobal: Connecting to camera service
+I/CameraManagerGlobal: single back camera, do not need hide aux camera, device number: 0
+    single back camera, do not need hide aux camera, device number: 1
+    single back camera, do not need hide aux camera, device number: 2
+I/CameraManagerGlobal: hide aux camera for app: com.termux
+    hide aux camera.
+I/CameraManagerGlobal: hide aux camera for app: com.termux
+I/CameraManagerGlobal: hide aux camera for app: com.termux
+I/zygote64: Do full code cache collection, code=124KB, data=107KB
+I/zygote64: After code cache collection, code=120KB, data=70KB
+D/onPermissionRequest: Camera
+I/chromium: [INFO:CONSOLE(36)] "Error: Cannot access video stream (NotAllowedError).", source: http://localhost:3000/www (36)
