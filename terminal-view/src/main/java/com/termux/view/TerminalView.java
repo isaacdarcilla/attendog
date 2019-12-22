@@ -514,7 +514,7 @@ public final class TerminalView extends View {
                         int tmpX1 = mSelX1, tmpY1 = mSelY1;
                         mSelX1 = mSelX2;
                         mSelY1 = mSelY2;
-                        mSelX2 = tmpX1;
+                        mSelX2 = tmpX1; 
                         mSelY2 = tmpY1;
                     }
 
