@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Typeface;
 import android.os.Build;
@@ -13,9 +14,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.widget.Button;
+import android.widget.RadioButton;
 import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
@@ -55,6 +59,12 @@ public class MainActivity extends FragmentActivity {
     public static final String ATTENDO_PACKAGE_PATH = "/mnt/sdcard/.attendo/packages/";
     @SuppressLint("SdCardPath")
     public static final String ATTENDO_PHP_PATH = "/mnt/sdcard/.attendo/packages/php/";
+    @SuppressLint("SdCardPath")
+    public static final String DOC_ROOT = "/mnt/sdcard/.attendo/www/";
+
+    private Button mWebLaunchButton;
+    private RadioButton mStartServerButton;
+    private RadioButton mStopServerButton;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressLint("CheckResult")
@@ -62,6 +72,9 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        String cpu = Build.CPU_ABI;
+        Log.e("CPU", "Arch " + cpu);
 
         RxPermissions rxPermissions = new RxPermissions(this);
         rxPermissions
@@ -75,14 +88,45 @@ public class MainActivity extends FragmentActivity {
                 }
             });
 
+        mWebLaunchButton = (Button) findViewById(R.id.view_web_view);
+        mWebLaunchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                launchWebView();
+            }
+        });
+
+        mStopServerButton = (RadioButton) findViewById(R.id.stop_server);
+        mStopServerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                killPhpProcess();
+            }
+        });
+
+        mStartServerButton = (RadioButton) findViewById(R.id.start_server);
+        mStartServerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checkArchitecture();
+                Toast.makeText(getApplicationContext(),"Service started",Toast.LENGTH_LONG).show();
+                new Thread( new Runnable() { @Override public void run() {
+                    copyLibFiles();
+                    changeMode();
+                    startServer();
+                } } ).start();
+            }
+        });
+
         TermuxInstaller.setupIfNeeded(MainActivity.this, () -> {
 
             runCommand();
             makeAttendoDir();
             makeAttendoPackageDir();
             makeAttendoPhpDir();
+            makeDocRootDir();
             copyFileOrDir(ASSETS_PATH, DESTINATION_ASSETS);
-            dialogStartServer();
+           /* dialogStartServer();*/
 
             if (mTermService == null) return; // Activity might have been destroyed.
 
@@ -99,13 +143,18 @@ public class MainActivity extends FragmentActivity {
         });
     }
 
+    private void launchWebView() {
+        Intent intent = new Intent(this,WebViewActivity.class);
+        startActivity(intent);
+    }
+
     private void executeInstall(String architecture){
         String arch = Build.CPU_ABI;
 
         if(arch.equals(Constants.AARCH64)){
             try {
                 extractPackage(new File("/mnt/sdcard/.attendo/packages/php/arm64-v8a.zip"),new File("/data/data/com.termux/files/home/packages/"));
-                Log.e("AARCH", "Installing" + arch);
+                Log.e("AARCH", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -114,7 +163,16 @@ public class MainActivity extends FragmentActivity {
         if(arch.equals(Constants.X86_64)) {
             try {
                 extractPackage(new File("/mnt/sdcard/.attendo/packages/php/x86_64.zip"),new File("/data/data/com.termux/files/home/packages/"));
-                Log.e("X86_64", "Installing" + arch);
+                Log.e("X86_64", "Installing " + arch);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if(arch.equals(Constants.I386)) {
+            try {
+                extractPackage(new File("/mnt/sdcard/.attendo/packages/php/x86.zip"),new File("/data/data/com.termux/files/home/packages/"));
+                Log.e("X86", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -130,8 +188,6 @@ public class MainActivity extends FragmentActivity {
              *  Run AARCH64 installer
              */
             executeInstall(Constants.AARCH64);
-
-
         }
 
         if(abi.equals(Constants.X86_64)){
@@ -140,36 +196,15 @@ public class MainActivity extends FragmentActivity {
             */
             executeInstall(Constants.X86_64);
         }
+
+        if(abi.equals(Constants.I386)){
+            /*
+             *  Run x86 installer
+             */
+            executeInstall(Constants.I386);
+        }
     }
 
-    public void dialogStartServer() {
-        AlertDialog alertDialog = new AlertDialog.Builder(this)
-            .setTitle("Server")
-            .setMessage("Attendo will now start the server. Do you want to execute?")
-            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    //set what would happen when positive button is clicked
-                    checkArchitecture();
-                    /*progress();*/
-                    copyLibFiles();
-                    changeMode();
-                   /* startServer();
-                    web();*/
-             /*       */
-                }
-            })
-            .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    //set what should happen when negative button is clicked
-
-
-                    finish();
-                }
-            })
-            .show();
-    }
 
     public void copyLibFiles() {
         String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "cd /data/data/com.termux/files/home/packages/libs ; cp * /data/data/com.termux/files/usr/lib"};
@@ -193,10 +228,6 @@ public class MainActivity extends FragmentActivity {
             // Waits for the command to finish.
             process.waitFor();
 
-      /*      // Call webView
-            web();*/
-
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -204,29 +235,36 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    public void progress() {
-        final ProgressDialog progress = new ProgressDialog(this);
-        progress.setTitle("Start");
-        progress.setMessage("Starting web server. Please wait...");
-        progress.show();
 
-        Runnable progressRunnable = new Runnable() {
 
-            @Override
-            public void run() {
+    public void killPhpProcess() {
+        String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "pkill php"};
+        try {
+            // Executes the command.
+            Process process = Runtime.getRuntime().exec(command);
 
-                startServer();
-                Toast.makeText(getApplicationContext(),"Service started",Toast.LENGTH_LONG).show();
+            // Reads stdout.
+            // NOTE: You can write to stdin of the command using
+            //       process.getOutputStream().
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()));
+            int read;
+            char[] buffer = new char[4096];
+            StringBuffer output = new StringBuffer();
+            while ((read = reader.read(buffer)) > 0) {
+                output.append(buffer, 0, read);
             }
-        };
+            reader.close();
 
-        Handler pdCanceller = new Handler();
-        pdCanceller.postDelayed(progressRunnable, 5000);
+            // Waits for the command to finish.
+            process.waitFor();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
-
-    /*/data/data/com.termux/files/usr/bin/unzip /mnt/sdcard/Attendo/packages/php/php.zip*/
-
-
 
     public static void extractPackage(File zipFile, File targetDirectory) throws IOException {
         ZipInputStream zis = new ZipInputStream(
@@ -276,7 +314,7 @@ public class MainActivity extends FragmentActivity {
     public void startServer() {
         try {
             // Executes the command.
-            String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "cd /data/data/com.termux/files/home/packages/php-bin ; ./php -S 0.0.0.0:3000"};
+            String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "cd /data/data/com.termux/files/home/packages/php-bin ; ./php -S localhost:3000 -t /mnt/sdcard/.attendo/www"};
 
             Process process = Runtime.getRuntime().exec(command);
 
@@ -294,15 +332,13 @@ public class MainActivity extends FragmentActivity {
             reader.close();
 
             // Waits for the command to finish.
-            process.waitFor();
+            /*process.waitFor();*/
 
       /*      // Call webView
             web();*/
 
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
@@ -364,6 +400,36 @@ public class MainActivity extends FragmentActivity {
             throw new RuntimeException(e);
         }
     }
+
+    public void makeDocRootDir(){
+        try {
+            // Executes the command.
+            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + DOC_ROOT);
+
+            // Reads stdout.
+            // NOTE: You can write to stdin of the command using
+            //       process.getOutputStream().
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()));
+            int read;
+            char[] buffer = new char[4096];
+            StringBuffer output = new StringBuffer();
+            while ((read = reader.read(buffer)) > 0) {
+                output.append(buffer, 0, read);
+            }
+            reader.close();
+
+            // Waits for the command to finish.
+            process.waitFor();
+            createPackageDir();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public void makeAttendoPhpDir(){
         try {
@@ -450,16 +516,6 @@ public class MainActivity extends FragmentActivity {
             throw new RuntimeException(e);
         }
     }
-
-/*    public void web() {
-        WebView myWebView = (WebView) findViewById(R.id.web_view);
-        myWebView.loadUrl("http://0.0.0.0:3000");
-        WebSettings webSettings = myWebView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.getAllowContentAccess();
-        webSettings.getAllowFileAccess();
-        webSettings.getCacheMode();
-    }*/
 
     public void copyFileOrDir(String path, String destinationDir) {
         AssetManager assetManager = this.getAssets();
