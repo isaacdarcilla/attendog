@@ -13,6 +13,10 @@
 - [x] Execute PHP server on background process (Resolves crash)
 - [x] Add Camera permission (Scanner still not working)
 - [x] Compile x86 PHP binaries now support x86 CPU
+- [x] Redesigned the UI, now user dont need to click start button
+- [x] Added Fullscreen mode
+- [x] Added network information
+- [x] Fixed crash on startup
 - [ ] Add native QR scanner with API
 - [ ] Copy Attendo assets to /mnt/sdcard/.attendo/www
 - [ ] Compile ARM PHP binaries
