@@ -17,7 +17,9 @@
 - [x] Added Fullscreen mode
 - [x] Added network information
 - [x] Fixed crash on startup
-- [ ] Add native QR scanner with API
+- [ ] Add native QR scanner integrated using Attendo API
 - [ ] Copy Attendo assets to /mnt/sdcard/.attendo/www
 - [ ] Compile ARM PHP binaries
-- [ ] Test Attendo web application
+- [ ] Change package name to "ph.attendo.deped.manila"
+- [ ] Test Attendo Web Interface
+- [ ] Source code checking & cleanup
