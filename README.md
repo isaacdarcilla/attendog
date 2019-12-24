@@ -11,6 +11,13 @@
 - [x] Add WebView activity
 - [x] Start server by using SwitchButton instead of DialogBox
 - [x] Execute PHP server on background process (Resolves crash)
-- [ ] Copy Attendo assets to /mnt/sdcard/.attendo/<folder>
-- [ ] Compile x86 and arm PHP binaries
+- [x] Add Camera permission (Scanner still not working)
+- [x] Compile x86 PHP binaries now support x86 CPU
+- [x] Redesigned the UI, now user dont need to click start button
+- [x] Added Fullscreen mode
+- [x] Added network information
+- [x] Fixed crash on startup
+- [ ] Add native QR scanner with API
+- [ ] Copy Attendo assets to /mnt/sdcard/.attendo/www
+- [ ] Compile ARM PHP binaries
 - [ ] Test Attendo web application
