@@ -1,0 +1,352 @@
+define({ "api": [
+  {
+    "type": "GET",
+    "url": "/api/types",
+    "title": "Access Types",
+    "description": "<p>List of access types available</p>",
+    "name": "Access_Types",
+    "group": "Scanner_API",
+    "version": "1.0.0",
+    "success": {
+      "fields": {
+        "Success Response": [
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 200 = Success</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Success Response:",
+          "content": "{\n \"result\": 200,\n \"message\": \"Access Types\",\n \"data\": [\n        {\n           \"1\":\"Time-in\",\n           \"2\":\"Time-out\",\n           \"3\":\"Late\"\n        }\n    ]\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "error": {
+      "fields": {
+        "Fail Response": [
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 500 = Fail/Invalid/Error</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Fail Response:",
+          "content": "{\n \"result\": 500,\n \"message\": \"Invalid Request!\",\n \"data\": false\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "filename": "system/controllers/apidoc.php",
+    "groupTitle": "Scanner_API"
+  },
+  {
+    "type": "GET",
+    "url": "/api/sections",
+    "title": "Sections",
+    "description": "<p>List of added sections</p>",
+    "name": "Sections",
+    "group": "Scanner_API",
+    "version": "1.0.0",
+    "success": {
+      "fields": {
+        "Success Response": [
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 200 = Success</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Success Response:",
+          "content": "{\n \"result\": 200,\n \"message\": \"Sections\",\n \"data\": [\n        {\n           \"1\":\"Masaya\",\n           \"2\":\"Mahaba\",\n           \"3\":\"Matino\"\n        }\n    ]\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "error": {
+      "fields": {
+        "Fail Response": [
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 500 = Fail/Invalid/Error</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Fail Response:",
+          "content": "{\n \"result\": 500,\n \"message\": \"Invalid Request!\",\n \"data\": false\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "filename": "system/controllers/apidoc.php",
+    "groupTitle": "Scanner_API"
+  },
+  {
+    "type": "GET",
+    "url": "/api/subjects",
+    "title": "Subjects",
+    "description": "<p>List of added subjects</p>",
+    "name": "Subjects",
+    "group": "Scanner_API",
+    "version": "1.0.0",
+    "success": {
+      "fields": {
+        "Success Response": [
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 200 = Success</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Success Response:",
+          "content": "{\n \"result\": 200,\n \"message\": \"Sections\",\n \"data\": [\n        {\n           \"1\":\"Math\",\n           \"2\":\"Science\",\n           \"3\":\"TLE\"\n        }\n    ]\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "error": {
+      "fields": {
+        "Fail Response": [
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 500 = Fail/Invalid/Error</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Fail Response:",
+          "content": "{\n \"result\": 500,\n \"message\": \"Invalid Request!\",\n \"data\": false\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "filename": "system/controllers/apidoc.php",
+    "groupTitle": "Scanner_API"
+  },
+  {
+    "type": "POST",
+    "url": "/api/verify",
+    "title": "Verify",
+    "description": "<p>Verify QRCode value of scanned student ID</p>",
+    "name": "Verify",
+    "group": "Scanner_API",
+    "version": "1.0.0",
+    "parameter": {
+      "fields": {
+        "Parameter": [
+          {
+            "group": "Parameter",
+            "type": "string",
+            "optional": false,
+            "field": "value",
+            "description": "<p>The QRCode value from scanned student ID.</p>"
+          },
+          {
+            "group": "Parameter",
+            "type": "int",
+            "optional": false,
+            "field": "type",
+            "description": "<p>Access type (ID) selected by teacher.</p>"
+          },
+          {
+            "group": "Parameter",
+            "type": "int",
+            "optional": false,
+            "field": "section",
+            "description": "<p>Section (ID) selected by teacher.</p>"
+          },
+          {
+            "group": "Parameter",
+            "type": "int",
+            "optional": false,
+            "field": "subject",
+            "description": "<p>Subject (ID) selected by teacher.</p>"
+          }
+        ]
+      }
+    },
+    "success": {
+      "fields": {
+        "Success Response": [
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 200 = Success</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Success Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Success Response:",
+          "content": "{\n \"result\": 200,\n \"message\": \"Student Verified!\",\n \"data\": [\n        {\n           \"name\":\"Norielle A. Cruz\",\n           \"section\":\"Abraham\",\n           \"subject\":\"Science\",\n           \"type\":\"Time-in\"\n        }\n    ]\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "error": {
+      "fields": {
+        "Fail Response": [
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "status",
+            "description": "<p>The status handler. <br/> 500 = Fail/Invalid/Error</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "message",
+            "description": "<p>The response message.</p>"
+          },
+          {
+            "group": "Fail Response",
+            "type": "String",
+            "optional": false,
+            "field": "data",
+            "description": "<p>The array object of results.</p>"
+          }
+        ]
+      },
+      "examples": [
+        {
+          "title": "Fail Response:",
+          "content": "{\n \"result\": 500,\n \"message\": \"Student is not from this section!\",\n \"data\": false\n}",
+          "type": "json"
+        }
+      ]
+    },
+    "filename": "system/controllers/apidoc.php",
+    "groupTitle": "Scanner_API"
+  }
+] });

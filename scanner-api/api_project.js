@@ -1,0 +1,16 @@
+define({
+  "name": "Attendo Scanner API",
+  "version": "1.0.0",
+  "description": "API for attendo mobile app native scanner",
+  "title": "Native Scanner API",
+  "url": "http://localhost:3000",
+  "sampleUrl": false,
+  "defaultVersion": "0.0.0",
+  "apidoc": "0.3.0",
+  "generator": {
+    "name": "apidoc",
+    "time": "2019-12-24T20:05:34.493Z",
+    "url": "http://apidocjs.com",
+    "version": "0.19.0"
+  }
+});
