@@ -17,7 +17,7 @@
 - [x] Added Fullscreen mode
 - [x] Added network information
 - [x] Fixed crash on startup
-- [x] Copy sample assets to /mnt/sdcard/.attendo/www, now need to create www folder
+- [x] Copy sample assets to /mnt/sdcard/.attendo/www, no need to create www folder
 - [ ] Add native QR scanner integrated using Attendo API
 - [ ] Compile ARM PHP binaries
 - [ ] Change package name to "ph.attendo.deped.manila"
