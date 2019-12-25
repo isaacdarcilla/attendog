@@ -8,16 +8,16 @@
 - [x] Added a method for identifying CPU architecture for  binary installation
 - [x] Design UI for starting and stopping server
 - [x] Tested the server in the browser with Sqlite
-- [x] Add WebView activity
+- [x] Add WebViewActivity
 - [x] Start server by using SwitchButton instead of DialogBox
 - [x] Execute PHP server on background process (Resolves crash)
 - [x] Add Camera permission (Scanner still not working)
-- [x] Compile x86 PHP binaries now support x86 CPU
+- [x] Compiled x86 PHP binaries now support x86 CPU
 - [x] Redesigned the UI, now user dont need to click start button
 - [x] Added Fullscreen mode
 - [x] Added network information
 - [x] Fixed crash on startup
-- [x] Copy Attendo assets to /mnt/sdcard/.attendo/www
+- [x] Copy sample assets to /mnt/sdcard/.attendo/www, now need to create www folder
 - [ ] Add native QR scanner integrated using Attendo API
 - [ ] Compile ARM PHP binaries
 - [ ] Change package name to "ph.attendo.deped.manila"
