@@ -18,7 +18,8 @@
 - [x] Added network information
 - [x] Fixed crash on startup
 - [x] Copy sample assets to /mnt/sdcard/.attendo/www, no need to create www folder
-- [ ] Add native QR scanner integrated using Attendo API
+- [x] Added native QR scanner 
+- [ ] Integrate Attendo API
 - [ ] Compile ARM PHP binaries
 - [ ] Change package name to "ph.attendo.deped.manila"
 - [ ] Test Attendo Web Interface
