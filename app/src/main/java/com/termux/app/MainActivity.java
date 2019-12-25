@@ -2,31 +2,40 @@ package com.termux.app;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
-import android.graphics.Typeface;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
+import android.system.ErrnoException;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
-import androidx.fragment.app.FragmentActivity;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.termux.R;
-import com.termux.app.Constants;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -41,33 +50,16 @@ import java.io.OutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class MainActivity extends FragmentActivity {
+public class MainActivity extends AppCompatActivity {
 
     TermuxService mTermService;
-    @SuppressLint("SdCardPath")
-    public static final String TERMUX_FAILSAFE_SESSION_ACTION = "com.termux.app.failsafe_session";
-    @SuppressLint("SdCardPath")
-    public static final String DESTINATION_ASSETS = "/mnt/sdcard/.attendo/packages/";
-    public static final  String ASSETS_PATH = "php";
-    @SuppressLint("SdCardPath")
-    public static final String HOME_LOCATION = "/data/data/com.termux/files/home/";
-    @SuppressLint("SdCardPath")
-    public static final String PACKAGE_LOCATION = "/data/data/com.termux/files/home/packages";
-    @SuppressLint("SdCardPath")
-    public static final String ATTENDO_PATH = "/mnt/sdcard/.attendo/";
-    @SuppressLint("SdCardPath")
-    public static final String ATTENDO_PACKAGE_PATH = "/mnt/sdcard/.attendo/packages/";
-    @SuppressLint("SdCardPath")
-    public static final String ATTENDO_PHP_PATH = "/mnt/sdcard/.attendo/packages/php/";
-    @SuppressLint("SdCardPath")
-    public static final String DOC_ROOT = "/mnt/sdcard/.attendo/www/";
 
     private Button mWebLaunchButton;
     private RadioButton mStartServerButton;
     private RadioButton mStopServerButton;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    @SuppressLint("CheckResult")
+    @SuppressLint({"CheckResult", "ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,15 +70,37 @@ public class MainActivity extends FragmentActivity {
 
         RxPermissions rxPermissions = new RxPermissions(this);
         rxPermissions
-            .request(Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE) // ask single or multiple permission once
+            .request(Manifest.permission.WRITE_EXTERNAL_STORAGE) // ask single or multiple permission once
             .subscribe(granted -> {
                 if (granted) {
                     // All requested permissions are granted
+                    TermuxInstaller.setupIfNeeded(MainActivity.this, () -> {
+                        ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.HOME_LOCATION);
+                        ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.ATTENDO_PATH);
+                        ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.ATTENDO_PACKAGE_PATH);
+                        ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.ATTENDO_PHP_PATH);
+                        ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.DOC_ROOT);
+                        copyFileOrDir(Constants.ASSETS_PATH, Constants.DESTINATION_ASSETS);
+                        progressInstalling();
+
+                        if (mTermService == null) return; // Activity might have been destroyed.
+
+                        try {
+                            Bundle bundle = getIntent().getExtras();
+                            boolean launchFailsafe = false;
+                            if (bundle != null) {
+                                launchFailsafe = bundle.getBoolean(Constants.TERMUX_FAILSAFE_SESSION_ACTION, false);
+                            }
+                        } catch (WindowManager.BadTokenException e) {
+                            // Activity finished - ignore.
+                        }
+                    });
                 } else {
                     // At least one permission is denied
                 }
             });
+
+        /* Redesigned
 
         mWebLaunchButton = (Button) findViewById(R.id.view_web_view);
         mWebLaunchButton.setOnClickListener(new View.OnClickListener() {
@@ -101,6 +115,7 @@ public class MainActivity extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 killPhpProcess();
+                Toast.makeText(getApplicationContext(),"Service stopped",Toast.LENGTH_LONG).show();
             }
         });
 
@@ -116,36 +131,108 @@ public class MainActivity extends FragmentActivity {
                     startServer();
                 } } ).start();
             }
-        });
-
-        TermuxInstaller.setupIfNeeded(MainActivity.this, () -> {
-
-            runCommand();
-            makeAttendoDir();
-            makeAttendoPackageDir();
-            makeAttendoPhpDir();
-            makeDocRootDir();
-            copyFileOrDir(ASSETS_PATH, DESTINATION_ASSETS);
-           /* dialogStartServer();*/
-
-            if (mTermService == null) return; // Activity might have been destroyed.
-
-            try {
-                Bundle bundle = getIntent().getExtras();
-                boolean launchFailsafe = false;
-                if (bundle != null) {
-                    launchFailsafe = bundle.getBoolean(TERMUX_FAILSAFE_SESSION_ACTION, false);
-                }
-               /*addNewSession(launchFailsafe, null);*/
-            } catch (WindowManager.BadTokenException e) {
-                // Activity finished - ignore.
-            }
-        });
+        });*/
     }
 
+    private  void progressInstalling() {
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Attendo is starting the server. Please wait...");
+        progressDialog.show();
+
+        checkArchitecture();
+        WebUtil webUtil = new WebUtil();
+        try {
+            webUtil.deletePackageAfterInstall();
+        } catch (ErrnoException e) {
+            e.printStackTrace();
+        }
+        getPhpAssets(Constants.WWW_PATH, Constants.WWW_ASSETS);
+        webUtil.copyIndexToSdcard();
+
+        new Thread( new Runnable() { @Override public void run() {
+            copyLibFiles();
+            changeMode();
+            startServer();
+        } } ).start();
+
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                progressDialog.cancel();
+            }
+        };
+
+        launchWebView();
+
+        Handler handler = new Handler();
+        handler.postDelayed(runnable, 5000);
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private void launchWebView() {
-        Intent intent = new Intent(this,WebViewActivity.class);
-        startActivity(intent);
+        /*Intent intent = new Intent(this,ScanActivity.class);
+        startActivity(intent);*/
+
+        WebView myWebView = (WebView) findViewById(R.id.web_view_viewer);
+
+        Runnable runnable = new Runnable() {
+            @SuppressLint("SetJavaScriptEnabled")
+            @Override
+            public void run() {
+
+                WebSettings webSettings = myWebView.getSettings();
+                webSettings.setJavaScriptEnabled(true);
+                webSettings.setAllowContentAccess(true);
+                webSettings.setAllowFileAccess(true);
+                webSettings.setAllowFileAccessFromFileURLs(true);
+                webSettings.setAllowUniversalAccessFromFileURLs(true);
+                webSettings.setMediaPlaybackRequiresUserGesture(true);
+                webSettings.setDomStorageEnabled(true);
+                webSettings.setSupportZoom(false);
+
+                myWebView.setWebViewClient(new WebViewClient());
+                myWebView.setWebChromeClient(new WebChromeClient(){
+                    @Override
+                    public void onPermissionRequest(final PermissionRequest request) {
+                        Log.d("onPermissionRequest","Camera");
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @TargetApi(Build.VERSION_CODES.M)
+                            @Override
+                            public void run() {
+                                if(request.getOrigin().toString().equals("http://0.0.0.0:3000/")) {
+                                    Log.d("onPermissionRequest","ACCESS");
+                                    request.grant(request.getResources());
+                                } else {
+                                    request.deny();
+                                }
+                            }
+                        });
+                    }
+                });
+
+                myWebView.loadUrl("http://0.0.0.0:3000/");
+            }
+        };
+
+        final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener(){
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                getSupportActionBar().show();
+                return true;
+            }
+        });
+
+        myWebView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return gestureDetector.onTouchEvent(event);
+            }
+        });
+
+        /*Toast.makeText(getApplicationContext(),"Service started",Toast.LENGTH_LONG).show();*/
+
+        Handler handler = new Handler();
+        handler.postDelayed(runnable, 7000);
     }
 
     private void executeInstall(String architecture){
@@ -184,37 +271,23 @@ public class MainActivity extends FragmentActivity {
         Toast.makeText(getApplicationContext(), abi,Toast.LENGTH_LONG);
 
         if(abi.equals(Constants.AARCH64)) {
-            /*
-             *  Run AARCH64 installer
-             */
             executeInstall(Constants.AARCH64);
         }
 
         if(abi.equals(Constants.X86_64)){
-            /*
-            *  Run x86_64 installer
-            */
             executeInstall(Constants.X86_64);
         }
 
         if(abi.equals(Constants.I386)){
-            /*
-             *  Run x86 installer
-             */
             executeInstall(Constants.I386);
         }
     }
 
-
     public void copyLibFiles() {
-        String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "cd /data/data/com.termux/files/home/packages/libs ; cp * /data/data/com.termux/files/usr/lib"};
+        String[] command = {Constants.SERVER_SHELL, "-c", Constants.COPY_LIB};
         try {
-            // Executes the command.
             Process process = Runtime.getRuntime().exec(command);
 
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
             BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()));
             int read;
@@ -225,38 +298,6 @@ public class MainActivity extends FragmentActivity {
             }
             reader.close();
 
-            // Waits for the command to finish.
-            process.waitFor();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-
-    public void killPhpProcess() {
-        String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "pkill php"};
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec(command);
-
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));
-            int read;
-            char[] buffer = new char[4096];
-            StringBuffer output = new StringBuffer();
-            while ((read = reader.read(buffer)) > 0) {
-                output.append(buffer, 0, read);
-            }
-            reader.close();
-
-            // Waits for the command to finish.
             process.waitFor();
 
         } catch (IOException e) {
@@ -288,11 +329,6 @@ public class MainActivity extends FragmentActivity {
                 } finally {
                     fout.close();
                 }
-            /* if time should be restored as well
-            long time = ze.getTime();
-            if (time > 0)
-                file.setLastModified(time);
-            */
             }
         } finally {
             zis.close();
@@ -302,25 +338,17 @@ public class MainActivity extends FragmentActivity {
     public void changeMode() {
         try {
             Process proc = Runtime.getRuntime()
-                .exec("chmod 777 -R /data/data/com.termux/files/home");
+                .exec(Constants.CHANGE_MOD);
             proc.waitFor();
-            Log.v("CHMOD", proc.toString());
         } catch (Exception ex) {
             ex.printStackTrace();
-            Log.v("TAG", "exec failed");
         }
     }
 
     public void startServer() {
         try {
-            // Executes the command.
-            String[] command = {"/data/data/com.termux/files/usr/bin/sh", "-c", "cd /data/data/com.termux/files/home/packages/php-bin ; ./php -S localhost:3000 -t /mnt/sdcard/.attendo/www"};
-
+            String[] command = {Constants.SERVER_SHELL, "-c", Constants.SERVER_START};
             Process process = Runtime.getRuntime().exec(command);
-
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
             BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()));
             int read;
@@ -330,27 +358,16 @@ public class MainActivity extends FragmentActivity {
                 output.append(buffer, 0, read);
             }
             reader.close();
-
-            // Waits for the command to finish.
-            /*process.waitFor();*/
-
-      /*      // Call webView
-            web();*/
-
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void makeAttendoDir(){
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + ATTENDO_PATH);
 
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
+    private void ensureDirectories(String command, String directory) {
+        try {
+            Process process = Runtime.getRuntime().exec(command + " " + directory);
+            Log.e("Make - ", "Directory");
             BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()));
             int read;
@@ -360,128 +377,8 @@ public class MainActivity extends FragmentActivity {
                 output.append(buffer, 0, read);
             }
             reader.close();
-
-            // Waits for the command to finish.
             process.waitFor();
             createPackageDir();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void makeAttendoPackageDir(){
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + ATTENDO_PACKAGE_PATH);
-
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));
-            int read;
-            char[] buffer = new char[4096];
-            StringBuffer output = new StringBuffer();
-            while ((read = reader.read(buffer)) > 0) {
-                output.append(buffer, 0, read);
-            }
-            reader.close();
-
-            // Waits for the command to finish.
-            process.waitFor();
-            createPackageDir();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void makeDocRootDir(){
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + DOC_ROOT);
-
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));
-            int read;
-            char[] buffer = new char[4096];
-            StringBuffer output = new StringBuffer();
-            while ((read = reader.read(buffer)) > 0) {
-                output.append(buffer, 0, read);
-            }
-            reader.close();
-
-            // Waits for the command to finish.
-            process.waitFor();
-            createPackageDir();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    public void makeAttendoPhpDir(){
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + ATTENDO_PHP_PATH);
-
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));
-            int read;
-            char[] buffer = new char[4096];
-            StringBuffer output = new StringBuffer();
-            while ((read = reader.read(buffer)) > 0) {
-                output.append(buffer, 0, read);
-            }
-            reader.close();
-
-            // Waits for the command to finish.
-            process.waitFor();
-            createPackageDir();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void runCommand(){
-        try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + HOME_LOCATION);
-
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
-            BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));
-            int read;
-            char[] buffer = new char[4096];
-            StringBuffer output = new StringBuffer();
-            while ((read = reader.read(buffer)) > 0) {
-                output.append(buffer, 0, read);
-            }
-            reader.close();
-
-            // Waits for the command to finish.
-            process.waitFor();
-            createPackageDir();
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -491,12 +388,8 @@ public class MainActivity extends FragmentActivity {
 
     public void createPackageDir() {
         try {
-            // Executes the command.
-            Process process = Runtime.getRuntime().exec("/data/data/com.termux/files/usr/bin/mkdir " + PACKAGE_LOCATION);
+            Process process = Runtime.getRuntime().exec(Constants.MAKE_DIR_COMMAND + " " + Constants.PACKAGE_LOCATION);
 
-            // Reads stdout.
-            // NOTE: You can write to stdin of the command using
-            //       process.getOutputStream().
             BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()));
             int read;
@@ -507,7 +400,6 @@ public class MainActivity extends FragmentActivity {
             }
             reader.close();
 
-            // Waits for the command to finish.
             process.waitFor();
 
         } catch (IOException e) {
@@ -515,6 +407,52 @@ public class MainActivity extends FragmentActivity {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void getPhpAssets(String path, String destinationDir) {
+        AssetManager assetManager = this.getAssets();
+        String[] assets = null;
+        try {
+            assets = assetManager.list(path);
+            if (assets.length == 0) {
+                copyPhpFile(path,destinationDir);
+            } else {
+                String fullPath = destinationDir + "/" + path;
+                File dir = new File(fullPath);
+                if (!dir.exists())
+                    dir.mkdir();
+                for (int i = 0; i < assets.length; ++i) {
+                    getPhpAssets(path + "/" + assets[i], destinationDir + path + "/" + assets[i]);
+                }
+            }
+        } catch (IOException ex) {
+            Log.e("tag", "I/O Exception", ex);
+        }
+    }
+
+    private void copyPhpFile(String filename, String destinationDir) {
+        AssetManager assetManager = this.getAssets();
+        String newFileName = destinationDir;
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            in = assetManager.open(filename);
+            out = new FileOutputStream(newFileName);
+
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            in.close();
+            in = null;
+            out.flush();
+            out.close();
+            out = null;
+        } catch (Exception e) {
+            Log.e("FILE - ", e.getMessage());
+        }
+        new File(newFileName).setExecutable(true, false);
     }
 
     public void copyFileOrDir(String path, String destinationDir) {
@@ -559,7 +497,6 @@ public class MainActivity extends FragmentActivity {
             out = null;
         } catch (Exception e) {
             Log.e("FILE - ", e.getMessage());
-            Log.e("PATH - ", newFileName);
         }
         new File(newFileName).setExecutable(true, false);
     }
@@ -568,5 +505,73 @@ public class MainActivity extends FragmentActivity {
     public void onStart() {
         super.onStart();
         boolean mIsVisible = true;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.menu_bar, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id =item.getItemId();
+        if(id == R.id.scan) {
+            Log.d("Scan", "Scan activated");
+            return true;
+        }
+        if(id == R.id.fullscreen_button) {
+            Log.d("Fullscreen", "Fullscreen activated");
+            getSupportActionBar().hide();
+            return true;
+        }
+        if(id == R.id.refresh) {
+            Log.d("Refresh", "Refresh activated");
+            WebUtil webUtil = new WebUtil();
+            webUtil.kill();
+            progressInstalling();
+            return true;
+        }
+        if(id == R.id.network_stat) {
+            Log.d("Network - ", "IP " + getIp());
+            ipDialog();
+            return true;
+        }
+        if(id == R.id.exit) {
+            Log.d("Exit", "Exit activated");
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void launchFullScreen() {
+        Intent intent = new Intent(this, ScanActivity.class);
+        startActivity(intent);
+    }
+
+    public void ipDialog() {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+        dialog.setCancelable(false);
+        dialog.setTitle("Network Information");
+        dialog.setMessage("Access attendo on your laptop by visiting http://" + getIp() + ":3000");
+        dialog.setPositiveButton("Close", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        final AlertDialog alertDialog = dialog.create();
+        alertDialog.show();
+    }
+
+    public String getIp() {
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        int ipAddress = wifiInfo.getIpAddress();
+        String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
+        return ip;
     }
 }
