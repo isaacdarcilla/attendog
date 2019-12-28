@@ -8,10 +8,12 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.hardware.Camera;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.system.ErrnoException;
 import android.util.Log;
@@ -27,15 +29,34 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.zxing.client.android.Intents;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.termux.R;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -47,6 +68,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -54,9 +80,9 @@ public class MainActivity extends AppCompatActivity {
 
     TermuxService mTermService;
 
-    private Button mWebLaunchButton;
-    private RadioButton mStartServerButton;
-    private RadioButton mStopServerButton;
+    private String mTypes;
+    private String mSections;
+    private String mSubjects;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressLint({"CheckResult", "ClickableViewAccessibility"})
@@ -81,7 +107,28 @@ public class MainActivity extends AppCompatActivity {
                         ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.ATTENDO_PHP_PATH);
                         ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.DOC_ROOT);
                         copyFileOrDir(Constants.ASSETS_PATH, Constants.DESTINATION_ASSETS);
-                        progressInstalling();
+
+                        File dir = new File(Constants.WWW_PHP_PATH + "/tmp"); //locate temporary directory
+                        if(!dir.exists() && !dir.isDirectory()) {
+                            /* Fix issue https://github.com/isaacdarcilla/attendo/issues/3 */
+                            ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.WWW_PHP_PATH + "/tmp");
+                            getPhpAssets(Constants.WWW_PATH, Constants.WWW_ASSETS);
+                            WebUtil webUtil = new WebUtil();
+                            try {
+                                webUtil.extractPhpPackage(new File(Constants.WWW_PHP_ZIP), new File (Constants.WWW_PHP_PATH));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            progressInstalling();
+                            Log.e("Not Found", "Not Found - Creating ");
+                        } else {
+                            //Just start server & launch webview
+                            Log.e("Found", "Found - Ignore ");
+                            new Thread( new Runnable() { @Override public void run() {
+                                startServer();
+                            } } ).start();
+                            launchWebView();
+                        }
 
                         if (mTermService == null) return; // Activity might have been destroyed.
 
@@ -92,46 +139,13 @@ public class MainActivity extends AppCompatActivity {
                                 launchFailsafe = bundle.getBoolean(Constants.TERMUX_FAILSAFE_SESSION_ACTION, false);
                             }
                         } catch (WindowManager.BadTokenException e) {
-                            // Activity finished - ignore.
+
                         }
                     });
                 } else {
-                    // At least one permission is denied
+                    finish();
                 }
             });
-
-        /* Redesigned
-
-        mWebLaunchButton = (Button) findViewById(R.id.view_web_view);
-        mWebLaunchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                launchWebView();
-            }
-        });
-
-        mStopServerButton = (RadioButton) findViewById(R.id.stop_server);
-        mStopServerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                killPhpProcess();
-                Toast.makeText(getApplicationContext(),"Service stopped",Toast.LENGTH_LONG).show();
-            }
-        });
-
-        mStartServerButton = (RadioButton) findViewById(R.id.start_server);
-        mStartServerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                checkArchitecture();
-                Toast.makeText(getApplicationContext(),"Service started",Toast.LENGTH_LONG).show();
-                new Thread( new Runnable() { @Override public void run() {
-                    copyLibFiles();
-                    changeMode();
-                    startServer();
-                } } ).start();
-            }
-        });*/
     }
 
     private  void progressInstalling() {
@@ -143,11 +157,10 @@ public class MainActivity extends AppCompatActivity {
         WebUtil webUtil = new WebUtil();
         try {
             webUtil.deletePackageAfterInstall();
+            webUtil.deleteZip();
         } catch (ErrnoException e) {
             e.printStackTrace();
         }
-        getPhpAssets(Constants.WWW_PATH, Constants.WWW_ASSETS);
-        webUtil.copyIndexToSdcard();
 
         new Thread( new Runnable() { @Override public void run() {
             copyLibFiles();
@@ -240,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(arch.equals(Constants.AARCH64)){
             try {
-                extractPackage(new File("/mnt/sdcard/.attendo/packages/php/arm64-v8a.zip"),new File("/data/data/com.termux/files/home/packages/"));
+                extractPackage(new File(Constants.AARCH64_ZIP),new File(Constants.ZIP_DEST));
                 Log.e("AARCH", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -249,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(arch.equals(Constants.X86_64)) {
             try {
-                extractPackage(new File("/mnt/sdcard/.attendo/packages/php/x86_64.zip"),new File("/data/data/com.termux/files/home/packages/"));
+                extractPackage(new File(Constants.X86_64_ZIP),new File(Constants.ZIP_DEST));
                 Log.e("X86_64", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -258,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(arch.equals(Constants.I386)) {
             try {
-                extractPackage(new File("/mnt/sdcard/.attendo/packages/php/x86.zip"),new File("/data/data/com.termux/files/home/packages/"));
+                extractPackage(new File(Constants.X86_ZIP),new File(Constants.ZIP_DEST));
                 Log.e("X86", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -519,11 +532,13 @@ public class MainActivity extends AppCompatActivity {
         int id =item.getItemId();
         if(id == R.id.scan) {
             Log.d("Scan", "Scan activated");
+            initiateScanner();
             return true;
         }
         if(id == R.id.fullscreen_button) {
             Log.d("Fullscreen", "Fullscreen activated");
             getSupportActionBar().hide();
+            Toast.makeText(this, "Fullscreen enabled. Double tap on the screen to disable.", Toast.LENGTH_LONG).show();
             return true;
         }
         if(id == R.id.refresh) {
@@ -535,7 +550,15 @@ public class MainActivity extends AppCompatActivity {
         }
         if(id == R.id.network_stat) {
             Log.d("Network - ", "IP " + getIp());
-            ipDialog();
+            //ipDialog();
+            getTypes();
+            getSections();
+            getSubjects();
+            return true;
+        }
+        if(id == R.id.settings) {
+            Log.d("Settings - ", "Settings activated");
+            launchSettings();
             return true;
         }
         if(id == R.id.exit) {
@@ -546,8 +569,8 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void launchFullScreen() {
-        Intent intent = new Intent(this, ScanActivity.class);
+    public void launchSettings() {
+        Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
     }
 
@@ -571,7 +594,153 @@ public class MainActivity extends AppCompatActivity {
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         int ipAddress = wifiInfo.getIpAddress();
+        @SuppressLint("DefaultLocale")
         String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
         return ip;
+    }
+
+    public void initiateScanner() {
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setCaptureActivity(Scanner.class);
+        integrator.setPrompt("");
+        integrator.setCameraId(0);
+        integrator.setBeepEnabled(false);
+        integrator.setOrientationLocked(true);
+        integrator.initiateScan();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if(result != null) {
+            if(result.getContents() == null) {
+                Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
+            } else {
+                verifyStudentId(result.getContents(), mTypes);
+                Toast.makeText(this, result.getContents(), Toast.LENGTH_LONG).show();
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    public void getTypes() {
+        String URL = Constants.TYPES_URL;
+        JSONObject jsonObject = new JSONObject();
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, URL, jsonObject, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                try {
+                    final String[] type = { response.getString("data").replace("\":\"", "~")};
+                    final String[] potaThis = Arrays.toString(type)
+                        .replace("[{", "")
+                        .replace("}]","")
+                        .replace("\"","")
+                        .replaceAll("[0-9]*[~]","")
+                        .split(",");
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle("Select a type");
+
+                    int checkedItem = 0;
+                    builder.setSingleChoiceItems(potaThis, checkedItem, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            mTypes = potaThis[which];
+                            Toast.makeText(MainActivity.this, potaThis[which] + " selected", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    builder.setPositiveButton("Next", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+                        }
+                    });
+
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+
+                    Log.i("Volley Type Result ", Arrays.toString(potaThis));
+                    Log.i("Volley Type Result ", response.getString("data"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("Volley Type Result", String.valueOf(error));
+            }
+        });
+        Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
+    }
+
+    public void getSubjects() {
+        String URL = Constants.SUBJECTS_URL;
+        JSONObject jsonObject = new JSONObject();
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, URL, jsonObject, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                Log.i("Volley Subject Result ", String.valueOf(response));
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("Volley Subject Result", String.valueOf(error));
+            }
+        });
+        Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
+    }
+
+    public void getSections() {
+        String URL = Constants.SECTIONS_URL;
+        JSONObject jsonObject = new JSONObject();
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, URL, jsonObject, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                Log.i("Volley Section Result ", String.valueOf(response));
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("Volley Section Result", String.valueOf(error));
+            }
+        });
+        Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
+    }
+
+    public void verifyStudentId(String id, String types) throws RuntimeException {
+        String URL = Constants.VERIFY_URL;
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("value", id);
+
+            JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, URL, jsonObject, new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    Log.i("DATA", id.toLowerCase() + " ," + types.toString());
+                    Log.i("Volley Response Result ", String.valueOf(response));
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Log.e("Volley Error Result", String.valueOf(error));
+                }
+            }) {
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    final Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    return headers;
+                }
+            };
+
+            Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }

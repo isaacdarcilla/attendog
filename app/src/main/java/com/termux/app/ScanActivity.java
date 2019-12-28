@@ -26,5 +26,6 @@ public class ScanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_scanner);
 
     }
+
 }
 
