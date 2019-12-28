@@ -21,8 +21,8 @@
 - [x] Added native QR scanner 
 - [x] Updated language strings
 - [x] Integrate Attendo API
+- [x] Change package name to "ph.attendo.deped.manila"
 - [ ] Compile ARM PHP binaries
-- [ ] Change package name to "ph.attendo.deped.manila"
 - [ ] Test Attendo Web Interface
 - [ ] Source code checking & cleanup
-- [ ] Create separate downloader apk for publishing on google play. Changing package name will be disregarded for now.
+- [ ] Create separate downloader apk for publishing on google play.
