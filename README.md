@@ -25,3 +25,4 @@
 - [ ] Change package name to "ph.attendo.deped.manila"
 - [ ] Test Attendo Web Interface
 - [ ] Source code checking & cleanup
+- [ ] Create separate downloader apk for publishing on google play. Changing package name will be disregarded for now.
