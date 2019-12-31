@@ -8,12 +8,10 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
-import android.hardware.Camera;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.system.ErrnoException;
 import android.util.Log;
@@ -29,12 +27,6 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -46,15 +38,13 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.zxing.client.android.Intents;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.termux.R;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -68,10 +58,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -80,9 +68,9 @@ public class MainActivity extends AppCompatActivity {
 
     TermuxService mTermService;
 
-    private String mTypes;
-    private String mSections;
-    private String mSubjects;
+    public String mTypes;
+    public String mSections;
+    public String mSubjects;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressLint({"CheckResult", "ClickableViewAccessibility"})
@@ -93,6 +81,15 @@ public class MainActivity extends AppCompatActivity {
 
         String cpu = Build.CPU_ABI;
         Log.e("CPU", "Arch " + cpu);
+
+        FloatingActionButton floatingActionButton = (FloatingActionButton) findViewById(R.id.floatingActionButton);
+        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getTypes();
+                Log.d("FAB", "Clicked");
+            }
+        });
 
         RxPermissions rxPermissions = new RxPermissions(this);
         rxPermissions
@@ -109,13 +106,13 @@ public class MainActivity extends AppCompatActivity {
                         copyFileOrDir(Constants.ASSETS_PATH, Constants.DESTINATION_ASSETS);
 
                         File dir = new File(Constants.WWW_PHP_PATH + "/tmp"); //locate temporary directory
-                        if(!dir.exists() && !dir.isDirectory()) {
+                        if (!dir.exists() && !dir.isDirectory()) {
                             /* Fix issue https://github.com/isaacdarcilla/attendo/issues/3 */
                             ensureDirectories(Constants.MAKE_DIR_COMMAND, Constants.WWW_PHP_PATH + "/tmp");
                             getPhpAssets(Constants.WWW_PATH, Constants.WWW_ASSETS);
                             WebUtil webUtil = new WebUtil();
                             try {
-                                webUtil.extractPhpPackage(new File(Constants.WWW_PHP_ZIP), new File (Constants.WWW_PHP_PATH));
+                                WebUtil.extractPhpPackage(new File(Constants.WWW_PHP_ZIP), new File(Constants.WWW_PHP_PATH));
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -124,9 +121,12 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             //Just start server & launch webview
                             Log.e("Found", "Found - Ignore ");
-                            new Thread( new Runnable() { @Override public void run() {
-                                startServer();
-                            } } ).start();
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    startServer();
+                                }
+                            }).start();
                             launchWebView();
                         }
 
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
             });
     }
 
-    private  void progressInstalling() {
+    private void progressInstalling() {
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Attendo is starting the server. Please wait...");
         progressDialog.show();
@@ -162,11 +162,14 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        new Thread( new Runnable() { @Override public void run() {
-            copyLibFiles();
-            changeMode();
-            startServer();
-        } } ).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                copyLibFiles();
+                changeMode();
+                startServer();
+            }
+        }).start();
 
         Runnable runnable = new Runnable() {
             @Override
@@ -186,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         /*Intent intent = new Intent(this,ScanActivity.class);
         startActivity(intent);*/
 
-        WebView myWebView = (WebView) findViewById(R.id.web_view_viewer);
+        WebView myWebView = findViewById(R.id.web_view_viewer);
 
         Runnable runnable = new Runnable() {
             @SuppressLint("SetJavaScriptEnabled")
@@ -204,16 +207,16 @@ public class MainActivity extends AppCompatActivity {
                 webSettings.setSupportZoom(false);
 
                 myWebView.setWebViewClient(new WebViewClient());
-                myWebView.setWebChromeClient(new WebChromeClient(){
+                myWebView.setWebChromeClient(new WebChromeClient() {
                     @Override
                     public void onPermissionRequest(final PermissionRequest request) {
-                        Log.d("onPermissionRequest","Camera");
+                        Log.d("onPermissionRequest", "Camera");
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @TargetApi(Build.VERSION_CODES.M)
                             @Override
                             public void run() {
-                                if(request.getOrigin().toString().equals("http://0.0.0.0:3000/")) {
-                                    Log.d("onPermissionRequest","ACCESS");
+                                if (request.getOrigin().toString().equals("http://0.0.0.0:3000/")) {
+                                    Log.d("onPermissionRequest", "ACCESS");
                                     request.grant(request.getResources());
                                 } else {
                                     request.deny();
@@ -227,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener(){
+        final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
                 getSupportActionBar().show();
@@ -248,30 +251,30 @@ public class MainActivity extends AppCompatActivity {
         handler.postDelayed(runnable, 7000);
     }
 
-    private void executeInstall(String architecture){
+    private void executeInstall(String architecture) {
         String arch = Build.CPU_ABI;
 
-        if(arch.equals(Constants.AARCH64)){
+        if (arch.equals(Constants.AARCH64)) {
             try {
-                extractPackage(new File(Constants.AARCH64_ZIP),new File(Constants.ZIP_DEST));
+                extractPackage(new File(Constants.AARCH64_ZIP), new File(Constants.ZIP_DEST));
                 Log.e("AARCH", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        if(arch.equals(Constants.X86_64)) {
+        if (arch.equals(Constants.X86_64)) {
             try {
-                extractPackage(new File(Constants.X86_64_ZIP),new File(Constants.ZIP_DEST));
+                extractPackage(new File(Constants.X86_64_ZIP), new File(Constants.ZIP_DEST));
                 Log.e("X86_64", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        if(arch.equals(Constants.I386)) {
+        if (arch.equals(Constants.I386)) {
             try {
-                extractPackage(new File(Constants.X86_ZIP),new File(Constants.ZIP_DEST));
+                extractPackage(new File(Constants.X86_ZIP), new File(Constants.ZIP_DEST));
                 Log.e("X86", "Installing " + arch);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -281,17 +284,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void checkArchitecture() {
         String abi = Build.CPU_ABI;
-        Toast.makeText(getApplicationContext(), abi,Toast.LENGTH_LONG);
+        Toast.makeText(getApplicationContext(), abi, Toast.LENGTH_LONG);
 
-        if(abi.equals(Constants.AARCH64)) {
+        if (abi.equals(Constants.AARCH64)) {
             executeInstall(Constants.AARCH64);
         }
 
-        if(abi.equals(Constants.X86_64)){
+        if (abi.equals(Constants.X86_64)) {
             executeInstall(Constants.X86_64);
         }
 
-        if(abi.equals(Constants.I386)){
+        if (abi.equals(Constants.I386)) {
             executeInstall(Constants.I386);
         }
     }
@@ -428,7 +431,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             assets = assetManager.list(path);
             if (assets.length == 0) {
-                copyPhpFile(path,destinationDir);
+                copyPhpFile(path, destinationDir);
             } else {
                 String fullPath = destinationDir + "/" + path;
                 File dir = new File(fullPath);
@@ -470,11 +473,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void copyFileOrDir(String path, String destinationDir) {
         AssetManager assetManager = this.getAssets();
-        String assets[] = null;
+        String[] assets = null;
         try {
             assets = assetManager.list(path);
             if (assets.length == 0) {
-                copyFile(path,destinationDir);
+                copyFile(path, destinationDir);
             } else {
                 String fullPath = destinationDir + "/" + path;
                 File dir = new File(fullPath);
@@ -529,39 +532,21 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id =item.getItemId();
-        if(id == R.id.scan) {
-            Log.d("Scan", "Scan activated");
-            initiateScanner();
-            return true;
-        }
-        if(id == R.id.fullscreen_button) {
-            Log.d("Fullscreen", "Fullscreen activated");
-            getSupportActionBar().hide();
-            Toast.makeText(this, "Fullscreen enabled. Double tap on the screen to disable.", Toast.LENGTH_LONG).show();
-            return true;
-        }
-        if(id == R.id.refresh) {
+        int id = item.getItemId();
+
+        if (id == R.id.refresh) {
             Log.d("Refresh", "Refresh activated");
             WebUtil webUtil = new WebUtil();
             webUtil.kill();
             progressInstalling();
             return true;
         }
-        if(id == R.id.network_stat) {
-            Log.d("Network - ", "IP " + getIp());
-            //ipDialog();
-            getTypes();
-            getSections();
-            getSubjects();
-            return true;
-        }
-        if(id == R.id.settings) {
+        if (id == R.id.settings) {
             Log.d("Settings - ", "Settings activated");
             launchSettings();
             return true;
         }
-        if(id == R.id.exit) {
+        if (id == R.id.exit) {
             Log.d("Exit", "Exit activated");
             finish();
             return true;
@@ -570,58 +555,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void launchSettings() {
-        Intent intent = new Intent(this, SettingsActivity.class);
+        Intent intent = new Intent(this, ScanActivity.class);
         startActivity(intent);
-    }
-
-    public void ipDialog() {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-        dialog.setCancelable(false);
-        dialog.setTitle("Network Information");
-        dialog.setMessage("Access attendo on your laptop by visiting http://" + getIp() + ":3000");
-        dialog.setPositiveButton("Close", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-
-        final AlertDialog alertDialog = dialog.create();
-        alertDialog.show();
-    }
-
-    public String getIp() {
-        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        int ipAddress = wifiInfo.getIpAddress();
-        @SuppressLint("DefaultLocale")
-        String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
-        return ip;
-    }
-
-    public void initiateScanner() {
-        IntentIntegrator integrator = new IntentIntegrator(this);
-        integrator.setCaptureActivity(Scanner.class);
-        integrator.setPrompt("");
-        integrator.setCameraId(0);
-        integrator.setBeepEnabled(false);
-        integrator.setOrientationLocked(true);
-        integrator.initiateScan();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if(result != null) {
-            if(result.getContents() == null) {
-                Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
-            } else {
-                verifyStudentId(result.getContents(), mTypes);
-                Toast.makeText(this, result.getContents(), Toast.LENGTH_LONG).show();
-            }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data);
-        }
     }
 
     public void getTypes() {
@@ -631,30 +566,31 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    final String[] type = { response.getString("data").replace("\":\"", "~")};
-                    final String[] potaThis = Arrays.toString(type)
+                    final String[] type = {response.getString("data").replace("\":\"", "~")};
+                    final String[] item = Arrays.toString(type)
                         .replace("[{", "")
-                        .replace("}]","")
-                        .replace("\"","")
-                        .replaceAll("[0-9]*[~]","")
+                        .replace("}]", "")
+                        .replace("\"", "")
+                        .replaceAll("[0-9]*[~]", "")
                         .split(",");
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    builder.setTitle("Select a type");
+                    builder.setTitle("Select Type");
+                    builder.setCancelable(false);
 
-                    int checkedItem = 0;
-                    builder.setSingleChoiceItems(potaThis, checkedItem, new DialogInterface.OnClickListener() {
+                    int checkedItem = -1;
+                    builder.setSingleChoiceItems(item, checkedItem, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            mTypes = potaThis[which];
-                            Toast.makeText(MainActivity.this, potaThis[which] + " selected", Toast.LENGTH_SHORT).show();
+                            mTypes = item[which];
+                            Toast.makeText(MainActivity.this, item[which] + " selected", Toast.LENGTH_SHORT).show();
                         }
                     });
 
                     builder.setPositiveButton("Next", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-
+                            getSubjects();
                             dialog.dismiss();
                         }
                     });
@@ -662,7 +598,6 @@ public class MainActivity extends AppCompatActivity {
                     AlertDialog dialog = builder.create();
                     dialog.show();
 
-                    Log.i("Volley Type Result ", Arrays.toString(potaThis));
                     Log.i("Volley Type Result ", response.getString("data"));
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -683,7 +618,43 @@ public class MainActivity extends AppCompatActivity {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, URL, jsonObject, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-                Log.i("Volley Subject Result ", String.valueOf(response));
+                try {
+                    final String[] type = {response.getString("data").replace("\":\"", "~")};
+                    final String[] item = Arrays.toString(type)
+                        .replace("[{", "")
+                        .replace("}]", "")
+                        .replace("\"", "")
+                        .replaceAll("[0-9]*[~]", "")
+                        .split(",");
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle("Select Subject");
+                    builder.setCancelable(false);
+
+                    int checkedItem = -1;
+                    builder.setSingleChoiceItems(item, checkedItem, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            mSubjects = item[which];
+                            Toast.makeText(MainActivity.this, item[which] + " selected", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    builder.setPositiveButton("Next", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            getSections();
+                            dialog.dismiss();
+                        }
+                    });
+
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+
+                    Log.i("Volley Type Result ", response.getString("data"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }, new Response.ErrorListener() {
             @Override
@@ -700,7 +671,44 @@ public class MainActivity extends AppCompatActivity {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, URL, jsonObject, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-                Log.i("Volley Section Result ", String.valueOf(response));
+                try {
+                    final String[] type = {response.getString("data").replace("\":\"", "~")};
+                    final String[] item = Arrays.toString(type)
+                        .replace("[{", "")
+                        .replace("}]", "")
+                        .replace("\"", "")
+                        .replaceAll("[0-9]*[~]", "")
+                        .split(",");
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle("Select Section");
+                    builder.setCancelable(false);
+
+                    int checkedItem = -1;
+                    builder.setSingleChoiceItems(item, checkedItem, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            mSections = item[which];
+                            Toast.makeText(MainActivity.this, item[which] + " selected", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    builder.setPositiveButton("Next", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            scanContinuous();
+                            dialog.dismiss();
+                        }
+                    });
+
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+
+                    Log.i("Volley Type Result ", Arrays.toString(item));
+                    Log.i("Volley Type Result ", response.getString("data"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }, new Response.ErrorListener() {
             @Override
@@ -711,36 +719,11 @@ public class MainActivity extends AppCompatActivity {
         Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
     }
 
-    public void verifyStudentId(String id, String types) throws RuntimeException {
-        String URL = Constants.VERIFY_URL;
-        JSONObject jsonObject = new JSONObject();
-        try {
-            jsonObject.put("value", id);
-
-            JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, URL, jsonObject, new Response.Listener<JSONObject>() {
-                @Override
-                public void onResponse(JSONObject response) {
-                    Log.i("DATA", id.toLowerCase() + " ," + types.toString());
-                    Log.i("Volley Response Result ", String.valueOf(response));
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    Log.e("Volley Error Result", String.valueOf(error));
-                }
-            }) {
-                @Override
-                public Map<String, String> getHeaders() throws AuthFailureError {
-                    final Map<String, String> headers = new HashMap<>();
-                    headers.put("Content-Type", "application/json");
-                    return headers;
-                }
-            };
-
-            Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    public void scanContinuous() {
+        Intent intent = new Intent(this, ContinuousCaptureActivity.class);
+        intent.putExtra("mTypes", mTypes);
+        intent.putExtra("mSections", mSections);
+        intent.putExtra("mSubjects", mSubjects);
+        startActivity(intent);
     }
 }
