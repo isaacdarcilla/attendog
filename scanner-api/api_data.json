@@ -36,7 +36,7 @@
       "examples": [
         {
           "title": "Success Response:",
-          "content": "{\n \"result\": 200,\n \"message\": \"Access Types\",\n \"data\": [\n        {\n           \"1\":\"Time-in\",\n           \"2\":\"Time-out\",\n           \"3\":\"Late\"\n        }\n    ]\n}",
+          "content": "{\n \"result\": 200,\n \"message\": \"Access Types\",\n \"data\": [\n        {\n           \"id\": 1,\n           \"name\": \"Time-in\"\n        },\n        {\n           \"id\": 2,\n           \"name\": \"Time-out\"\n        }\n    ]\n}",
           "type": "json"
         }
       ]
@@ -75,7 +75,7 @@
         }
       ]
     },
-    "filename": "system/controllers/apidoc.php",
+    "filename": "./scanner-api.php",
     "groupTitle": "Scanner_API"
   },
   {
@@ -115,7 +115,7 @@
       "examples": [
         {
           "title": "Success Response:",
-          "content": "{\n \"result\": 200,\n \"message\": \"Sections\",\n \"data\": [\n        {\n           \"1\":\"Masaya\",\n           \"2\":\"Mahaba\",\n           \"3\":\"Matino\"\n        }\n    ]\n}",
+          "content": "{\n \"result\": 200,\n \"message\": \"Sections\",\n \"data\": [\n        {\n           \"id\": 1,\n           \"name\":\"Mahaba\"\n        },\n        {\n           \"id\": 2,\n           \"name: \"Magalang\"\n        }\n    ]\n}",
           "type": "json"
         }
       ]
@@ -154,7 +154,7 @@
         }
       ]
     },
-    "filename": "system/controllers/apidoc.php",
+    "filename": "./scanner-api.php",
     "groupTitle": "Scanner_API"
   },
   {
@@ -194,7 +194,7 @@
       "examples": [
         {
           "title": "Success Response:",
-          "content": "{\n \"result\": 200,\n \"message\": \"Sections\",\n \"data\": [\n        {\n           \"1\":\"Math\",\n           \"2\":\"Science\",\n           \"3\":\"TLE\"\n        }\n    ]\n}",
+          "content": "{\n \"result\": 200,\n \"message\": \"Sections\",\n \"data\": [\n        {\n           \"id\": 1,\n           \"name\": \"Science\"\n        },\n        {\n           \"id\": 2,\n           \"name\": \"TLE\"\n        }\n    ]\n}",
           "type": "json"
         }
       ]
@@ -233,11 +233,11 @@
         }
       ]
     },
-    "filename": "system/controllers/apidoc.php",
+    "filename": "./scanner-api.php",
     "groupTitle": "Scanner_API"
   },
   {
-    "type": "POST",
+    "type": "GET",
     "url": "/api/verify",
     "title": "Verify",
     "description": "<p>Verify QRCode value of scanned student ID</p>",
@@ -346,7 +346,35 @@
         }
       ]
     },
-    "filename": "system/controllers/apidoc.php",
+    "filename": "./scanner-api.php",
     "groupTitle": "Scanner_API"
+  },
+  {
+    "success": {
+      "fields": {
+        "Success 200": [
+          {
+            "group": "Success 200",
+            "optional": false,
+            "field": "varname1",
+            "description": "<p>No type.</p>"
+          },
+          {
+            "group": "Success 200",
+            "type": "String",
+            "optional": false,
+            "field": "varname2",
+            "description": "<p>With type.</p>"
+          }
+        ]
+      }
+    },
+    "type": "",
+    "url": "",
+    "version": "0.0.0",
+    "filename": "./scanner-api/main.js",
+    "group": "_home_ubuntu_attendo_apk_scanner_api_main_js",
+    "groupTitle": "_home_ubuntu_attendo_apk_scanner_api_main_js",
+    "name": ""
   }
 ]

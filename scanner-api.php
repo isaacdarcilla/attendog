@@ -1,7 +1,7 @@
 <?php
 
 /**
- *@api {POST}/api/verify Verify
+ *@api {GET}/api/verify Verify
  *@apiDescription Verify QRCode value of scanned student ID
  *@apiName Verify
  *@apiGroup Scanner API
@@ -63,9 +63,12 @@
  *  "message": "Access Types",
  *  "data": [
         {
-           "1":"Time-in",
-           "2":"Time-out",
-           "3":"Late"
+           "id": 1,
+           "name": "Time-in"
+        },
+        {
+           "id": 2,
+           "name": "Time-out"
         }
     ]
  *}
@@ -102,9 +105,12 @@
  *  "message": "Sections",
  *  "data": [
         {
-           "1":"Masaya",
-           "2":"Mahaba",
-           "3":"Matino"
+           "id": 1,
+           "name":"Mahaba"
+        },
+        {
+           "id": 2,
+           "name: "Magalang"
         }
     ]
  *}
@@ -141,9 +147,12 @@
  *  "message": "Sections",
  *  "data": [
         {
-           "1":"Math",
-           "2":"Science",
-           "3":"TLE"
+           "id": 1,
+           "name": "Science"
+        },
+        {
+           "id": 2,
+           "name": "TLE"
         }
     ]
  *}

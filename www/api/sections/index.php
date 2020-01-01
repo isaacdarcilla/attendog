@@ -4,7 +4,13 @@ die(json_encode([
   "status" => 200,
   "message" => "Sections",
   "data" => [
-    1 => "Happy",
-    2 => "Test"
+    [
+      "id" => 1,
+      "name" => "Magalang"
+    ],
+    [
+      "id" => 2,
+      "name" => "Matino"
+    ]
   ]
  ]));
