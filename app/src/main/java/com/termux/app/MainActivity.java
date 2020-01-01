@@ -45,6 +45,7 @@ import com.google.zxing.integration.android.IntentResult;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.termux.R;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -58,8 +59,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -566,24 +569,34 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    final String[] type = {response.getString("data").replace("\":\"", "~")};
-                    final String[] item = Arrays.toString(type)
-                        .replace("[{", "")
-                        .replace("}]", "")
-                        .replace("\"", "")
-                        .replaceAll("[0-9]*[~]", "")
-                        .split(",");
+
+                    List<String> globalItem = new ArrayList<String>();
+                    List<String> globalId = new ArrayList<String>();
+
+                    JSONArray jsonArray = response.getJSONArray("data");
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jObject = jsonArray.getJSONObject(i);
+                        String name = jObject.optString("name");
+                        String id = jObject.optString("id");
+                        globalItem.add(name);
+                        globalId.add(id);
+                    }
+
+                    String[] a = globalItem.toArray(new String[globalItem.size()]);
+                    String[] b = globalId.toArray(new String[globalId.size()]);
+                    Log.e("Types", Arrays.toString(a));
+                    Log.e("Id", Arrays.toString(b));
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                     builder.setTitle("Select Type");
                     builder.setCancelable(false);
 
                     int checkedItem = -1;
-                    builder.setSingleChoiceItems(item, checkedItem, new DialogInterface.OnClickListener() {
+                    builder.setSingleChoiceItems(a, checkedItem, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            mTypes = item[which];
-                            Toast.makeText(MainActivity.this, item[which] + " selected", Toast.LENGTH_SHORT).show();
+                            mTypes = b[which]; //Id instead of item
+                            Toast.makeText(MainActivity.this, a[which] + " selected", Toast.LENGTH_SHORT).show();
                         }
                     });
 
@@ -619,24 +632,33 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    final String[] type = {response.getString("data").replace("\":\"", "~")};
-                    final String[] item = Arrays.toString(type)
-                        .replace("[{", "")
-                        .replace("}]", "")
-                        .replace("\"", "")
-                        .replaceAll("[0-9]*[~]", "")
-                        .split(",");
+                    List<String> globalItem = new ArrayList<String>();
+                    List<String> globalId = new ArrayList<String>();
+
+                    JSONArray jsonArray = response.getJSONArray("data");
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jObject = jsonArray.getJSONObject(i);
+                        String name = jObject.optString("name");
+                        String id = jObject.optString("id");
+                        globalItem.add(name);
+                        globalId.add(id);
+                    }
+
+                    String[] a = globalItem.toArray(new String[globalItem.size()]);
+                    String[] b = globalId.toArray(new String[globalId.size()]);
+                    Log.e("Types", Arrays.toString(a));
+                    Log.e("Id", Arrays.toString(b));
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                     builder.setTitle("Select Subject");
                     builder.setCancelable(false);
 
                     int checkedItem = -1;
-                    builder.setSingleChoiceItems(item, checkedItem, new DialogInterface.OnClickListener() {
+                    builder.setSingleChoiceItems(a, checkedItem, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            mSubjects = item[which];
-                            Toast.makeText(MainActivity.this, item[which] + " selected", Toast.LENGTH_SHORT).show();
+                            mSubjects = b[which];
+                            Toast.makeText(MainActivity.this, a[which] + " selected", Toast.LENGTH_SHORT).show();
                         }
                     });
 
@@ -672,24 +694,33 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(JSONObject response) {
                 try {
-                    final String[] type = {response.getString("data").replace("\":\"", "~")};
-                    final String[] item = Arrays.toString(type)
-                        .replace("[{", "")
-                        .replace("}]", "")
-                        .replace("\"", "")
-                        .replaceAll("[0-9]*[~]", "")
-                        .split(",");
+                    List<String> globalItem = new ArrayList<String>();
+                    List<String> globalId = new ArrayList<String>();
+
+                    JSONArray jsonArray = response.getJSONArray("data");
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jObject = jsonArray.getJSONObject(i);
+                        String name = jObject.optString("name");
+                        String id = jObject.optString("id");
+                        globalItem.add(name);
+                        globalId.add(id);
+                    }
+
+                    String[] a = globalItem.toArray(new String[globalItem.size()]);
+                    String[] b = globalId.toArray(new String[globalId.size()]);
+                    Log.e("Types", Arrays.toString(a));
+                    Log.e("Id", Arrays.toString(b));
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                     builder.setTitle("Select Section");
                     builder.setCancelable(false);
 
                     int checkedItem = -1;
-                    builder.setSingleChoiceItems(item, checkedItem, new DialogInterface.OnClickListener() {
+                    builder.setSingleChoiceItems(a, checkedItem, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            mSections = item[which];
-                            Toast.makeText(MainActivity.this, item[which] + " selected", Toast.LENGTH_SHORT).show();
+                            mSections = b[which];
+                            Toast.makeText(MainActivity.this, a[which] + " selected", Toast.LENGTH_SHORT).show();
                         }
                     });
 
@@ -704,7 +735,7 @@ public class MainActivity extends AppCompatActivity {
                     AlertDialog dialog = builder.create();
                     dialog.show();
 
-                    Log.i("Volley Type Result ", Arrays.toString(item));
+                    Log.i("Volley Type Result ", Arrays.toString(a));
                     Log.i("Volley Type Result ", response.getString("data"));
                 } catch (JSONException e) {
                     e.printStackTrace();

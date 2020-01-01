@@ -89,6 +89,7 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
                         AlertDialog.Builder builder = new AlertDialog.Builder(ContinuousCaptureActivity.this);
                         builder.setTitle("Success");
                         builder.setMessage("Student data successfully verified.");
+                        builder.setCancelable(false);
                         playSuccessSound();
                         builder.setPositiveButton("Close", new DialogInterface.OnClickListener() {
                             @Override
@@ -102,6 +103,7 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
                         AlertDialog.Builder builder = new AlertDialog.Builder(ContinuousCaptureActivity.this);
                         builder.setTitle("Error");
                         builder.setMessage("Verifying student data has failed.");
+                        builder.setCancelable(false);
                         playErrorSound();
                         builder.setPositiveButton("Close", new DialogInterface.OnClickListener() {
                             @Override
