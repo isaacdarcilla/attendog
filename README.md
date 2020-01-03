@@ -22,6 +22,7 @@
 - [x] Updated language strings
 - [x] Integrate Attendo API
 - [x] Change package name to "ph.attendo.deped.manila"
+- [x] Item 1 in select dialog is selected by default to avoid "null" values
 - [ ] Compile ARM PHP binaries
 - [ ] Test Attendo Web Interface
 - [ ] Source code checking & cleanup
