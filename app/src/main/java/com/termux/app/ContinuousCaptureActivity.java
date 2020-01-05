@@ -1,12 +1,14 @@
 package com.termux.app;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -27,13 +29,12 @@ import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
 import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 import com.journeyapps.barcodescanner.DefaultDecoderFactory;
-import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.termux.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.ref.ReferenceQueue;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,7 +54,7 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
     private BarcodeCallback callback = new BarcodeCallback() {
         @Override
         public void barcodeResult(BarcodeResult result) {
-            if(result.getText() == null || result.getText().equals(lastText)){
+            if (result.getText() == null || result.getText().equals(lastText)) {
                 return;
             }
             lastText = result.getText();
@@ -68,11 +69,11 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
         }
     };
 
-    public void showToast(String text){
+    public void showToast(String text) {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
 
-    public void verifyStudentId(String id, String types, String sections, String subjects) throws RuntimeException {
+    public void verifyStudentId(String id, String types, String sections, String subjects) {
         String URL = Constants.VERIFY_URL;
         JSONObject jsonObject = new JSONObject();
 
@@ -86,11 +87,11 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
                     final String success = Arrays.toString(respond);
 
                     if (success.equals("[200]")) {
+
                         AlertDialog.Builder builder = new AlertDialog.Builder(ContinuousCaptureActivity.this);
                         builder.setTitle("Success");
                         builder.setMessage("Student data successfully verified.");
                         builder.setCancelable(false);
-                        playSuccessSound();
                         builder.setPositiveButton("Close", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -100,11 +101,11 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
                         AlertDialog dialog = builder.create();
                         dialog.show();
                     } else {
+
                         AlertDialog.Builder builder = new AlertDialog.Builder(ContinuousCaptureActivity.this);
                         builder.setTitle("Error");
                         builder.setMessage("Verifying student data has failed.");
                         builder.setCancelable(false);
-                        playErrorSound();
                         builder.setPositiveButton("Close", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -137,19 +138,28 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
         };
 
         Volley.newRequestQueue(getBaseContext()).add(jsonObjectRequest);
-
     }
 
     private void playErrorSound() {
         MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.failed);
-        mediaPlayer.setVolume(300, 300);
         mediaPlayer.start();
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                mp.release();
+            }
+        });
     }
 
     private void playSuccessSound() {
         MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.success);
-        mediaPlayer.setVolume(300, 300);
         mediaPlayer.start();
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                mp.release();
+            }
+        });
     }
 
     @SuppressLint("CheckResult")
@@ -163,21 +173,12 @@ public class ContinuousCaptureActivity extends AppCompatActivity {
         jSections = intent.getStringExtra("mSections");
         jSubjects = intent.getStringExtra("mSubjects");
 
-        RxPermissions rxPermissions = new RxPermissions(this);
-        rxPermissions
-            .request(Manifest.permission.CAMERA) // ask single or multiple permission once
-            .subscribe(granted -> {
-                if (granted) {
-                    barcodeView = (DecoratedBarcodeView) findViewById(R.id.barcode_scanner);
-                    Collection<BarcodeFormat> formats = Arrays.asList(BarcodeFormat.QR_CODE, BarcodeFormat.CODE_39);
-                    barcodeView.getBarcodeView().setDecoderFactory(new DefaultDecoderFactory(formats));
-                    barcodeView.initializeFromIntent(getIntent());
-                    barcodeView.decodeContinuous(callback);
-                    barcodeView.setStatusText("Place inside the viewfinder\n");
-                }else {
-                    finish();
-                }
-            });
+        barcodeView = (DecoratedBarcodeView) findViewById(R.id.barcode_scanner);
+        Collection<BarcodeFormat> formats = Arrays.asList(BarcodeFormat.QR_CODE, BarcodeFormat.CODE_39);
+        barcodeView.getBarcodeView().setDecoderFactory(new DefaultDecoderFactory(formats));
+        barcodeView.initializeFromIntent(getIntent());
+        barcodeView.decodeContinuous(callback);
+        barcodeView.setStatusText("Place inside the viewfinder\n");
     }
 
     @Override
