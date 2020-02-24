@@ -1,3 +1,1 @@
-Takbo.git
-
-- Boy Takbo
+Takbo.git ni Boy Takbo
