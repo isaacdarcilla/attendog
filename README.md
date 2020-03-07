@@ -1,4 +1,4 @@
-### Takbo.git ni Boy Takbo
+### AttenDOG project ni Boy Takbo
 
 ### [Norielle Cruz](https://github.com/noriellecruz) the greatest NINJA.
 
