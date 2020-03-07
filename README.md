@@ -1,5 +1,7 @@
 ### Takbo.git ni Boy Takbo
 
-### [Norielle Cruz](github.com/noriellecruz) the greatest NINJA.
+### [Norielle Cruz](https://github.com/noriellecruz) the greatest NINJA.
 
-#scam
+![scammer](https://avatars3.githubusercontent.com/u/46517631?s=400&v=4)
+
+#scam #tulfo
