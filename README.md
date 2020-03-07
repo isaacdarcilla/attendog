@@ -4,4 +4,4 @@
 
 ![scammer](https://avatars3.githubusercontent.com/u/46517631?s=400&v=4)
 
-#scam #tulfo #kasuka
+#scam #tulfo #ughh
